@@ -69,7 +69,7 @@ async function fetchFlights(source: string, destination: string, date: string) {
   const destCode = airportCodes[destination.toLowerCase()] || destination.toUpperCase();
 
   const serpApiUrl = `https://serpapi.com/search.json?engine=google_flights&type=2&departure_id=${sourceCode}&arrival_id=${destCode}&outbound_date=${date}&currency=USD&hl=en&api_key=${apiKey}`;
-  const corsProxyUrl = `https://corsproxy.io/?${encodeURIComponent(serpApiUrl)}`;
+  const corsProxyUrl = `https://cors-anywhere.herokuapp.com/${serpApiUrl}`;
 
   try {
     const response = await fetch(corsProxyUrl, {
