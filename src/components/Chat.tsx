@@ -24,7 +24,7 @@ export function Chat({ itinerary }: ChatProps) {
     e.preventDefault();
     if (!input.trim()) return;
 
-    const userMessage = { role: "user", content: input };
+    const userMessage: Message = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
@@ -32,8 +32,8 @@ export function Chat({ itinerary }: ChatProps) {
     try {
       // Here we would normally make an API call to get the AI response
       // For now, we'll simulate a response
-      const simulatedResponse = {
-        role: "assistant" as const,
+      const simulatedResponse: Message = {
+        role: "assistant",
         content: `I understand you're asking about "${input}". Based on your itinerary, I can help with that. What specific details would you like to know?`,
       };
 
