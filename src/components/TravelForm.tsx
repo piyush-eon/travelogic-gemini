@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { TravelPreferences } from "@/lib/gemini";
 
 interface TravelFormProps {
@@ -19,6 +20,7 @@ export function TravelForm({ onSubmit, isLoading }: TravelFormProps) {
     budget: "",
     travelers: 1,
     interests: "",
+    includeTransportation: false,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -118,6 +120,24 @@ export function TravelForm({ onSubmit, isLoading }: TravelFormProps) {
           placeholder="e.g., historical sites, local cuisine, outdoor activities"
           className="h-24"
         />
+      </div>
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="includeTransportation"
+          checked={preferences.includeTransportation}
+          onCheckedChange={(checked) =>
+            setPreferences({
+              ...preferences,
+              includeTransportation: checked as boolean,
+            })
+          }
+        />
+        <Label
+          htmlFor="includeTransportation"
+          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+        >
+          Include transportation details
+        </Label>
       </div>
       <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? "Generating Plan..." : "Plan My Trip"}

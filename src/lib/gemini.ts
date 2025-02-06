@@ -8,6 +8,158 @@ export type TravelPreferences = {
   budget: string;
   travelers: number;
   interests: string;
+  includeTransportation?: boolean;
+};
+
+// Mock flight data type definitions
+export type Airport = {
+  name: string;
+  id: string;
+  time: string;
+};
+
+export type Flight = {
+  departure_airport: Airport;
+  arrival_airport: Airport;
+  duration: number;
+  airplane: string;
+  airline: string;
+  airline_logo: string;
+  travel_class: string;
+  flight_number: string;
+  legroom: string;
+  extensions: string[];
+  overnight?: boolean;
+};
+
+export type BestFlight = {
+  flights: Flight[];
+  layovers?: {
+    duration: number;
+    name: string;
+    id: string;
+  }[];
+  total_duration: number;
+  carbon_emissions: {
+    this_flight: number;
+    typical_for_this_route: number;
+    difference_percent: number;
+  };
+  price: number;
+  type: string;
+  airline_logo: string;
+  booking_token: string;
+};
+
+const mockFlightData = {
+  best_flights: [
+    {
+      flights: [
+        {
+          departure_airport: {
+            name: "Indira Gandhi International Airport",
+            id: "DEL",
+            time: "2025-02-07 00:05"
+          },
+          arrival_airport: {
+            name: "Noi Bai International Airport",
+            id: "HAN",
+            time: "2025-02-07 05:35"
+          },
+          duration: 240,
+          airplane: "Airbus A330",
+          airline: "Vietjet",
+          airline_logo: "https://www.gstatic.com/flights/airline_logos/70px/VJ.png",
+          travel_class: "Economy",
+          flight_number: "VJ 972",
+          legroom: "31 in",
+          extensions: [
+            "Average legroom (31 in)",
+            "Carbon emissions estimate: 205 kg"
+          ],
+          overnight: true
+        }
+      ],
+      total_duration: 240,
+      carbon_emissions: {
+        this_flight: 205000,
+        typical_for_this_route: 223000,
+        difference_percent: -8
+      },
+      price: 298,
+      type: "One way",
+      airline_logo: "https://www.gstatic.com/flights/airline_logos/70px/VJ.png",
+      booking_token: "WyJDalJJVjFORk5VWlpPSEZwTWsxQlFrcDZhSGRDUnkwdExTMHRMUzB0TFhaMGJuY3lNRUZCUVVGQlIyVnJXWFJOVFdKdmNEUkJFZ1ZXU2prM01ob0xDTm5vQVJBQ0dnTlZVMFE0SEhEWjZBRT0iLFtbIkRFTCIsIjIwMjUtMDItMDciLCJIQU4iLG51bGwsIlZKIiwiOTcyIl1dXQ=="
+    },
+    {
+      flights: [
+        {
+          departure_airport: {
+            name: "Indira Gandhi International Airport",
+            id: "DEL",
+            time: "2025-02-07 16:30"
+          },
+          arrival_airport: {
+            name: "Netaji Subhash Chandra Bose International Airport",
+            id: "CCU",
+            time: "2025-02-07 18:35"
+          },
+          duration: 125,
+          airplane: "Airbus A321neo",
+          airline: "IndiGo",
+          airline_logo: "https://www.gstatic.com/flights/airline_logos/70px/6E.png",
+          travel_class: "Economy",
+          flight_number: "6E 529",
+          legroom: "29 in",
+          extensions: [
+            "Below average legroom (29 in)",
+            "Carbon emissions estimate: 92 kg"
+          ]
+        },
+        {
+          departure_airport: {
+            name: "Netaji Subhash Chandra Bose International Airport",
+            id: "CCU",
+            time: "2025-02-07 22:05"
+          },
+          arrival_airport: {
+            name: "Noi Bai International Airport",
+            id: "HAN",
+            time: "2025-02-08 02:10"
+          },
+          duration: 155,
+          airplane: "Airbus A321neo",
+          airline: "IndiGo",
+          airline_logo: "https://www.gstatic.com/flights/airline_logos/70px/6E.png",
+          travel_class: "Economy",
+          flight_number: "6E 1631",
+          legroom: "29 in",
+          extensions: [
+            "Below average legroom (29 in)",
+            "Carbon emissions estimate: 117 kg"
+          ],
+          overnight: true
+        }
+      ],
+      layovers: [
+        {
+          duration: 210,
+          name: "Netaji Subhash Chandra Bose International Airport",
+          id: "CCU"
+        }
+      ],
+      total_duration: 490,
+      carbon_emissions: {
+        this_flight: 210000,
+        typical_for_this_route: 223000,
+        difference_percent: -6
+      },
+      price: 416,
+      type: "One way",
+      airline_logo: "https://www.gstatic.com/flights/airline_logos/70px/6E.png",
+      booking_token: "WyJDalJJVjFORk5VWlpPSEZwTWsxQlFrcDZhSGRDUnkwdExTMHRMUzB0TFhaMGJuY3lNRUZCUVVGQlIyVnJXWFJOVFdKdmNEUkJFZ3cyUlRVeU9YdzJSVEUyTXpFYUN3alB4QUlRQWhvRFZWTkVPQnh3ejhRQyIsW1siREVMIiwiMjAyNS0wMi0wNyIsIkNDVSIsbnVsbCwiNkUiLCI1MjkiXSxbIkNDVSIsIjIwMjUtMDItMDciLCJIQU4iLG51bGwsIjZFIiwiMTYzMSJdXV0="
+    },
+  ],
 };
 
 export async function generateTravelPlan(preferences: TravelPreferences) {
@@ -28,13 +180,28 @@ export async function generateTravelPlan(preferences: TravelPreferences) {
     3. Recommended accommodations
     4. Travel tips and recommendations
     5. Must-visit places based on interests
+    ${preferences.includeTransportation ? '6. Transportation options and recommendations' : ''}
 
     Format the response in a clear, organized way.`;
 
   try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    return response.text();
+    let plan = response.text();
+
+    // If transportation details are requested, append mock flight data
+    if (preferences.includeTransportation) {
+      plan += "\n\n## Available Flights\n\n";
+      mockFlightData.best_flights.forEach((flight, index) => {
+        plan += `### Option ${index + 1}\n`;
+        plan += `- Price: $${flight.price}\n`;
+        plan += `- Duration: ${flight.total_duration} minutes\n`;
+        plan += `- Airline: ${flight.flights[0].airline}\n`;
+        plan += `- Flight Number: ${flight.flights[0].flight_number}\n\n`;
+      });
+    }
+
+    return plan;
   } catch (error) {
     console.error("Error generating travel plan:", error);
     throw new Error("Failed to generate travel plan. Please try again.");
