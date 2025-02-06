@@ -10,9 +10,9 @@ export function TravelItinerary({ itinerary }: TravelItineraryProps) {
       <h2 className="text-2xl font-semibold mb-4 text-travel-primary">
         Your Travel Itinerary
       </h2>
-      <div className="prose max-w-none">
+      <div className="prose prose-sm md:prose-base lg:prose-lg max-w-none">
         {itinerary.split("\n").map((line, index) => (
-          <p key={index} className="mb-2">
+          <p key={index} className="mb-2 whitespace-pre-wrap">
             {line}
           </p>
         ))}
