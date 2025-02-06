@@ -20,6 +20,29 @@ export function Chat({ itinerary }: ChatProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  const generateResponse = (userInput: string) => {
+    // Extract key information from itinerary
+    const destinations = itinerary.match(/\b(?:visiting|in|to)\s+([A-Za-z\s,]+)/gi);
+    const activities = itinerary.match(/\b(?:activities|visit|explore|enjoy)\s+([^.]+)/gi);
+    
+    // Check for different types of questions
+    if (userInput.toLowerCase().includes("activities") || userInput.toLowerCase().includes("do")) {
+      return `Based on your itinerary, you can ${activities?.[0] || "explore various attractions"}. Would you like more specific details about any particular activity?`;
+    }
+    
+    if (userInput.toLowerCase().includes("where") || userInput.toLowerCase().includes("destination")) {
+      return `According to your itinerary, you'll be ${destinations?.[0] || "visiting several locations"}. Which specific location would you like to know more about?`;
+    }
+    
+    if (userInput.toLowerCase().includes("time") || userInput.toLowerCase().includes("when")) {
+      const dates = itinerary.match(/\b(?:from|between|on)\s+([A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?(?:,?\s+\d{4})?)/gi);
+      return `Your trip is scheduled for ${dates?.[0] || "the dates specified in your itinerary"}. Would you like to know more about the schedule?`;
+    }
+
+    // Default response with context
+    return `I see you're asking about "${userInput}". Your itinerary includes ${destinations?.[0] || "various destinations"} with activities like ${activities?.[0] || "various experiences"}. Could you please specify what aspect you'd like to know more about?`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -30,15 +53,14 @@ export function Chat({ itinerary }: ChatProps) {
     setIsLoading(true);
 
     try {
-      // Here we would normally make an API call to get the AI response
-      // For now, we'll simulate a response
-      const simulatedResponse: Message = {
+      const response = generateResponse(input);
+      const assistantMessage: Message = {
         role: "assistant",
-        content: `I understand you're asking about "${input}". Based on your itinerary, I can help with that. What specific details would you like to know?`,
+        content: response,
       };
 
       setTimeout(() => {
-        setMessages((prev) => [...prev, simulatedResponse]);
+        setMessages((prev) => [...prev, assistantMessage]);
         setIsLoading(false);
       }, 1000);
     } catch (error) {
