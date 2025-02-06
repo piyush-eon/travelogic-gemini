@@ -68,15 +68,15 @@ async function fetchFlights(source: string, destination: string, date: string) {
   const sourceCode = airportCodes[source.toLowerCase()] || source.toUpperCase();
   const destCode = airportCodes[destination.toLowerCase()] || destination.toUpperCase();
 
-  const url = `https://serpapi.com/search.json?engine=google_flights&type=2&departure_id=${sourceCode}&arrival_id=${destCode}&outbound_date=${date}&currency=USD&hl=en&api_key=${apiKey}`;
+  const serpApiUrl = `https://serpapi.com/search.json?engine=google_flights&type=2&departure_id=${sourceCode}&arrival_id=${destCode}&outbound_date=${date}&currency=USD&hl=en&api_key=${apiKey}`;
+  const corsProxyUrl = `https://corsproxy.io/?${encodeURIComponent(serpApiUrl)}`;
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(corsProxyUrl, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
       },
-      mode: 'cors', // Explicitly set CORS mode
     });
 
     if (!response.ok) {
