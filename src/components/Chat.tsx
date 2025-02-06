@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import { useToast } from "./ui/use-toast";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 interface Message {
   role: "user" | "assistant";
@@ -20,27 +21,28 @@ export function Chat({ itinerary }: ChatProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const generateResponse = (userInput: string) => {
-    // Extract key information from itinerary
-    const destinations = itinerary.match(/\b(?:visiting|in|to)\s+([A-Za-z\s,]+)/gi);
-    const activities = itinerary.match(/\b(?:activities|visit|explore|enjoy)\s+([^.]+)/gi);
-    
-    // Check for different types of questions
-    if (userInput.toLowerCase().includes("activities") || userInput.toLowerCase().includes("do")) {
-      return `Based on your itinerary, you can ${activities?.[0] || "explore various attractions"}. Would you like more specific details about any particular activity?`;
-    }
-    
-    if (userInput.toLowerCase().includes("where") || userInput.toLowerCase().includes("destination")) {
-      return `According to your itinerary, you'll be ${destinations?.[0] || "visiting several locations"}. Which specific location would you like to know more about?`;
-    }
-    
-    if (userInput.toLowerCase().includes("time") || userInput.toLowerCase().includes("when")) {
-      const dates = itinerary.match(/\b(?:from|between|on)\s+([A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?(?:,?\s+\d{4})?)/gi);
-      return `Your trip is scheduled for ${dates?.[0] || "the dates specified in your itinerary"}. Would you like to know more about the schedule?`;
+  const generateResponse = async (userInput: string) => {
+    const apiKey = localStorage.getItem("GEMINI_API_KEY");
+    if (!apiKey) {
+      throw new Error("Please set your Gemini API key in the settings");
     }
 
-    // Default response with context
-    return `I see you're asking about "${userInput}". Your itinerary includes ${destinations?.[0] || "various destinations"} with activities like ${activities?.[0] || "various experiences"}. Could you please specify what aspect you'd like to know more about?`;
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const prompt = `You are a helpful travel assistant. The user has the following itinerary:
+
+${itinerary}
+
+Their question is: ${userInput}
+
+Please provide a helpful, concise response focusing on the specific information they're asking about.
+If they ask about activities, destinations, or timing, reference specific details from their itinerary.
+Keep responses friendly but focused on the actual itinerary details.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,22 +55,20 @@ export function Chat({ itinerary }: ChatProps) {
     setIsLoading(true);
 
     try {
-      const response = generateResponse(input);
+      const response = await generateResponse(input);
       const assistantMessage: Message = {
         role: "assistant",
         content: response,
       };
 
-      setTimeout(() => {
-        setMessages((prev) => [...prev, assistantMessage]);
-        setIsLoading(false);
-      }, 1000);
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to get a response. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to get a response. Please try again.",
         variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
     }
   };
