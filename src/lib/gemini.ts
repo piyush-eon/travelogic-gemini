@@ -11,7 +11,6 @@ export type TravelPreferences = {
   includeTransportation?: boolean;
 };
 
-// Mock flight data type definitions
 export type Airport = {
   name: string;
   id: string;
@@ -51,46 +50,79 @@ export type BestFlight = {
   booking_token: string;
 };
 
-const mockFlightData = {
-  best_flights: [
-    {
-      flights: [
-        {
-          departure_airport: {
-            name: "Indira Gandhi International Airport",
-            id: "DEL",
-            time: "2025-02-07 00:05"
+async function fetchFlights(source: string, destination: string, date: string) {
+  const apiKey = localStorage.getItem("SERPAPI_KEY");
+  if (!apiKey) {
+    throw new Error("SerpAPI key not found. Please add it in settings.");
+  }
+
+  const url = `https://serpapi.com/search.json?engine=google_flights&type=2&departure_id=${source}&arrival_id=${destination}&outbound_date=${date}&currency=USD&hl=en&api_key=${apiKey}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    return data.best_flights || [];
+  } catch (error) {
+    console.error("Error fetching flights:", error);
+    return [];
+  }
+}
+
+export async function generateTravelPlan(preferences: TravelPreferences) {
+  const genAI = new GoogleGenerativeAI(localStorage.getItem("GEMINI_API_KEY") || "");
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  const prompt = `Act as a travel planning expert. Create a detailed travel itinerary based on the following preferences:
+    - Traveling from: ${preferences.source}
+    - Destination: ${preferences.destination}
+    - Dates: ${preferences.startDate} to ${preferences.endDate}
+    - Budget: ${preferences.budget}
+    - Number of Travelers: ${preferences.travelers}
+    - Interests: ${preferences.interests}
+
+    Please provide:
+    1. Daily itinerary with timings
+    2. Estimated costs for activities
+    3. Recommended accommodations
+    4. Travel tips and recommendations
+    5. Must-visit places based on interests
+    ${preferences.includeTransportation ? '6. Transportation options and recommendations' : ''}
+
+    Format the response in a clear, organized way.`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let plan = response.text();
+
+    // If transportation details are requested, fetch real flight data
+    if (preferences.includeTransportation) {
+      plan += "\n\n## Available Flights\n\n";
+      try {
+        const flights = await fetchFlights(
+          preferences.source,
+          preferences.destination,
+          preferences.startDate
+        );
+        
+        flights.forEach((flight: BestFlight, index: number) => {
+          plan += `### Option ${index + 1}\n`;
+          plan += `- Price: $${flight.price}\n`;
+          plan += `- Duration: ${flight.total_duration}\n`;
+          plan += `- Airline: ${flight.flights[0].airline}\n`;
+          plan += `- Flight Number: ${flight.flights[0].flight_number}\n`;
+          plan += `- booking_token: ${flight.booking_token}\n\n`;
+        });
+      } catch (error) {
+        console.error("Error fetching flights:", error);
+        // Fallback to mock data if API call fails
+        const mockFlights = [
+          {
+            price: 298,
+            total_duration: 240,
+            flights: [{ airline: "Vietjet", flight_number: "VJ 972" }],
+            booking_token: "WyJDalJJVjFORk5VWlpPSEZwTWsxQlFrcDZhSGRDUnkwdExTMHRMUzB0TFhaMGJuY3lNRUZCUVVGQlIyVnJXWFJOVFdKdmNEUkJFZ1ZXU2prM01ob0xDTm5vQVJBQ0dnTlZVMFE0SEhEWjZBRT0iLFtbIkRFTCIsIjIwMjUtMDItMDciLCJIQU4iLG51bGwsIlZKIiwiOTcyIl1dXQ=="
           },
-          arrival_airport: {
-            name: "Noi Bai International Airport",
-            id: "HAN",
-            time: "2025-02-07 05:35"
-          },
-          duration: 240,
-          airplane: "Airbus A330",
-          airline: "Vietjet",
-          airline_logo: "https://www.gstatic.com/flights/airline_logos/70px/VJ.png",
-          travel_class: "Economy",
-          flight_number: "VJ 972",
-          legroom: "31 in",
-          extensions: [
-            "Average legroom (31 in)",
-            "Carbon emissions estimate: 205 kg"
-          ],
-          overnight: true
-        }
-      ],
-      total_duration: 240,
-      carbon_emissions: {
-        this_flight: 205000,
-        typical_for_this_route: 223000,
-        difference_percent: -8
-      },
-      price: 298,
-      type: "One way",
-      airline_logo: "https://www.gstatic.com/flights/airline_logos/70px/VJ.png",
-      booking_token: "WyJDalJJVjFORk5VWlpPSEZwTWsxQlFrcDZhSGRDUnkwdExTMHRMUzB0TFhaMGJuY3lNRUZCUVVGQlIyVnJXWFJOVFdKdmNEUkJFZ1ZXU2prM01ob0xDTm5vQVJBQ0dnTlZVMFE0SEhEWjZBRT0iLFtbIkRFTCIsIjIwMjUtMDItMDciLCJIQU4iLG51bGwsIlZKIiwiOTcyIl1dXQ=="
-    },
     {
       flights: [
         {
@@ -159,46 +191,17 @@ const mockFlightData = {
       airline_logo: "https://www.gstatic.com/flights/airline_logos/70px/6E.png",
       booking_token: "WyJDalJJVjFORk5VWlpPSEZwTWsxQlFrcDZhSGRDUnkwdExTMHRMUzB0TFhaMGJuY3lNRUZCUVVGQlIyVnJXWFJOVFdKdmNEUkJFZ3cyUlRVeU9YdzJSVEUyTXpFYUN3alB4QUlRQWhvRFZWTkVPQnh3ejhRQyIsW1siREVMIiwiMjAyNS0wMi0wNyIsIkNDVSIsbnVsbCwiNkUiLCI1MjkiXSxbIkNDVSIsIjIwMjUtMDItMDciLCJIQU4iLG51bGwsIjZFIiwiMTYzMSJdXV0="
     },
-  ],
-};
-
-export async function generateTravelPlan(preferences: TravelPreferences) {
-  const genAI = new GoogleGenerativeAI(localStorage.getItem("GEMINI_API_KEY") || "");
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-  const prompt = `Act as a travel planning expert. Create a detailed travel itinerary based on the following preferences:
-    - Traveling from: ${preferences.source}
-    - Destination: ${preferences.destination}
-    - Dates: ${preferences.startDate} to ${preferences.endDate}
-    - Budget: ${preferences.budget}
-    - Number of Travelers: ${preferences.travelers}
-    - Interests: ${preferences.interests}
-
-    Please provide:
-    1. Daily itinerary with timings
-    2. Estimated costs for activities
-    3. Recommended accommodations
-    4. Travel tips and recommendations
-    5. Must-visit places based on interests
-    ${preferences.includeTransportation ? '6. Transportation options and recommendations' : ''}
-
-    Format the response in a clear, organized way.`;
-
-  try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    let plan = response.text();
-
-    // If transportation details are requested, append mock flight data
-    if (preferences.includeTransportation) {
-      plan += "\n\n## Available Flights\n\n";
-      mockFlightData.best_flights.forEach((flight, index) => {
-        plan += `### Option ${index + 1}\n`;
-        plan += `- Price: $${flight.price}\n`;
-        plan += `- Duration: ${flight.total_duration} minutes\n`;
-        plan += `- Airline: ${flight.flights[0].airline}\n`;
-        plan += `- Flight Number: ${flight.flights[0].flight_number}\n\n`;
-      });
+        ];
+        
+        mockFlights.forEach((flight, index) => {
+          plan += `### Option ${index + 1}\n`;
+          plan += `- Price: $${flight.price}\n`;
+          plan += `- Duration: ${flight.total_duration}\n`;
+          plan += `- Airline: ${flight.flights[0].airline}\n`;
+          plan += `- Flight Number: ${flight.flights[0].flight_number}\n`;
+          plan += `- booking_token: ${flight.booking_token}\n\n`;
+        });
+      }
     }
 
     return plan;
