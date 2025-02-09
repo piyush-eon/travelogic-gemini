@@ -11,15 +11,6 @@ const Index = () => {
   const { toast } = useToast();
 
   const handleSubmit = async (preferences: TravelPreferences) => {
-    if (!localStorage.getItem("GEMINI_API_KEY")) {
-      toast({
-        title: "API Key Required",
-        description: "Please enter your Gemini API key in the settings to continue.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsLoading(true);
     try {
       const plan = await generateTravelPlan(preferences);

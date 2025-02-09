@@ -22,7 +22,7 @@ export function Chat({ itinerary }: ChatProps) {
   const { toast } = useToast();
 
   const generateResponse = async (userInput: string) => {
-    const apiKey = localStorage.getItem("GEMINI_API_KEY");
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error("Please set your Gemini API key in the settings");
     }
@@ -65,7 +65,10 @@ Keep responses friendly but focused on the actual itinerary details.`;
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to get a response. Please try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to get a response. Please try again.",
         variant: "destructive",
       });
     } finally {
